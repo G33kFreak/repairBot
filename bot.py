@@ -13,20 +13,35 @@ priceButton = types.InlineKeyboardButton("", callback_data="price")
 signButton = types.InlineKeyboardButton("", callback_data="sign")
 markup.add(PlLanguageButton, RusLanguageButton)
 
+
+adminChatId = 547783762
+
 language = ''
 
 sign = False
 
+@bot.message_handler(commands = ['showMyChatIdJaPidoras'])
+def showChatId(message):
+    bot.send_message(message.chat.id, str(message.chat.id))
+    print(message.chat.id)
+
 @bot.message_handler(commands = ['start'])
 def setLanguage(message):
+    global adminChatId
     bot.send_message(message.chat.id, "Привет! Для начала выбери язык\n\n Cześć! Najpierw wybierz język", parse_mode='html', reply_markup=markup)
+    
 
 @bot.message_handler(content_types = ['text'])
 def writeData(message):
         global sign
+        global adminChatId
         if sign:
             fileForOrders = open('orders.txt', "a")
+            ChatIdsFile = open('clientsChatIds.txt', "a")
             fileForOrders.write(message.text + '\n')
+            ChatIdsFile.write(str(message.chat.id) + '\n')
+            if adminChatId != -1:
+                bot.send_message(adminChatId, message.text)
             fileForOrders.close()
             sign = False
             markup = types.InlineKeyboardMarkup(row_width=1)
@@ -41,6 +56,7 @@ def writeData(message):
                 bot.send_message(message.chat.id, "Выбери кнопку")
             elif language == 'PL':
                 bot.send_message(message.chat.id, "Wybierz przycisk")
+        
 
 @bot.callback_query_handler(func=lambda call: True)
 def welcome_callback(call):
@@ -54,16 +70,14 @@ def welcome_callback(call):
         if call.message:
             if call.data == 'back_to_welcome':
                 showWelcome(call, language, markup)
-            if call.data == 'lang_rus':
+            elif call.data == 'lang_rus':
                 language = 'RUS'
                 showWelcome(call, language, markup)
-            if call.data == 'lang_pl':
+            elif call.data == 'lang_pl':
                 language = 'PL'
                 showWelcome(call, language, markup)
-            if call.data == 'portfolio':
+            elif call.data == 'portfolio':
                 showPortfolio(call, language, markup)
-                bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="",
-                    reply_markup=None)
             elif call.data == 'price':
                 showPrice(call, language, markup)
             elif call.data == "sign":
@@ -78,19 +92,20 @@ def welcome_callback(call):
         print(repr(e))
 
 def showWelcome(call, language, markup):
+    firstName = call.message.chat.first_name
     if language == 'RUS':
         portfolioButton = types.InlineKeyboardButton("Портфолио", callback_data="portfolio")
         priceButton = types.InlineKeyboardButton("Прайс лист", callback_data="price")
         signButton = types.InlineKeyboardButton("Записаться", callback_data="sign")
         markup.add(portfolioButton, priceButton, signButton)
-        bot.send_message(call.message.chat.id, "Добро пожаловать, {0.first_name}!\nЯ - <b>{1.first_name}</b>\nТут ты можешь посмотреть портфолио, цены, а также записаться на ремонт своего ноутбука!".format(call.message.from_user, bot.get_me()),
+        bot.send_message(call.message.chat.id, "Добро пожаловать, <b>"+firstName+"</b>!\nЯ - <b>{1.first_name}</b>\nТут ты можешь посмотреть портфолио, цены, а также записаться на ремонт своего ноутбука!".format(call.message.from_user, bot.get_me()),
             parse_mode='html', reply_markup=markup)
     if language == 'PL':
         portfolioButton = types.InlineKeyboardButton("Portfolio", callback_data="portfolio")
         priceButton = types.InlineKeyboardButton("Ceny", callback_data="price")
         signButton = types.InlineKeyboardButton("Zapisać się", callback_data="sign")
         markup.add(portfolioButton, priceButton, signButton)
-        bot.send_message(call.message.chat.id, "Witam, {0.first_name}!\nЯ - <b>{1.first_name}</b>\nTutaj możesz obejrzeć portfolio, ceny oraz się zapisać na naprawę swego laptopa!".format(call.message.from_user, bot.get_me()),
+        bot.send_message(call.message.chat.id, "Witam, <b>"+firstName+"</b>!\nJa - <b>{1.first_name}</b>\nTutaj możesz obejrzeć portfolio, ceny oraz się zapisać na naprawę swego laptopa!".format(call.message.from_user, bot.get_me()),
             parse_mode='html', reply_markup=markup)
 
 
