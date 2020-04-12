@@ -1,5 +1,8 @@
 import telebot
 import config
+import sqlite3
+import dbHandler
+from dbHandler import myCursor, connection
 
 from telebot import types
 
@@ -14,16 +17,11 @@ signButton = types.InlineKeyboardButton("", callback_data="sign")
 markup.add(PlLanguageButton, RusLanguageButton)
 
 
-adminChatId = 547783762
+adminChatId = 0 #admin chat id for sending new orders to him 
 
 language = ''
 
 sign = False
-
-@bot.message_handler(commands = ['showMyChatIdJaPidoras'])
-def showChatId(message):
-    bot.send_message(message.chat.id, str(message.chat.id))
-    print(message.chat.id)
 
 @bot.message_handler(commands = ['start'])
 def setLanguage(message):
@@ -36,13 +34,9 @@ def writeData(message):
         global sign
         global adminChatId
         if sign:
-            fileForOrders = open('orders.txt', "a")
-            ChatIdsFile = open('clientsChatIds.txt', "a")
-            fileForOrders.write(message.text + '\n')
-            ChatIdsFile.write(str(message.chat.id) + '\n')
+            dbHandler.write_order(message.text)
             if adminChatId != -1:
                 bot.send_message(adminChatId, message.text)
-            fileForOrders.close()
             sign = False
             markup = types.InlineKeyboardMarkup(row_width=1)
             goBackButton = types.InlineKeyboardButton('Ok', callback_data='back_to_welcome')
@@ -113,17 +107,15 @@ def showPrice(call, language, markup):
     markup = types.InlineKeyboardMarkup(row_width=2)
     global portfolioButton
     global signButton
+    stringForOutput = ''
     if language == 'PL':
         portfolioButton = types.InlineKeyboardButton("Portfolio", callback_data="portfolio")
         signButton = types.InlineKeyboardButton("Zapisać się", callback_data="sign")
-        pricelist = open('pricelistPL.txt', "r", encoding='utf-8')
+        stringForOutput = dbHandler.get_pricesPL()
     if language == 'RUS':
         portfolioButton = types.InlineKeyboardButton("Портфолио", callback_data="portfolio")
         signButton = types.InlineKeyboardButton("Записаться", callback_data="sign")
-        pricelist = open('pricelistRUS.txt', "r", encoding='utf-8')
-    stringForOutput = ''
-    for line in pricelist:
-        stringForOutput += line + '\n'
+        stringForOutput = dbHandler.get_pricesRU()
     markup.add(portfolioButton, signButton)
     bot.send_message(call.message.chat.id, stringForOutput, parse_mode='html', reply_markup=markup)
 
@@ -134,15 +126,9 @@ def showPortfolio(call, language,  markup):
     if language == 'PL':
         priceButton = types.InlineKeyboardButton("Ceny", callback_data="price")
         signButton = types.InlineKeyboardButton("Zapisać się", callback_data="sign")
-        portfolioFile = open('portfolioPL.txt')
     if language == 'RUS':
         priceButton = types.InlineKeyboardButton("Прайс лист", callback_data="price")
         signButton = types.InlineKeyboardButton("Записаться", callback_data="sign")
-        portfolioFile = open('portfolioRUS.txt')
-    stringForOutput = ''
-    for line in portfolioFile:
-        stringForOutput += line + '\n'
-    markup.add(priceButton, signButton)
-    bot.send_message(call.message.chat.id, stringForOutput, parse_mode='html', reply_markup=markup)
+    #TO DO 
 
 bot.polling(none_stop=True)
